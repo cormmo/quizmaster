@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quizmaster</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="setup-panel" aria-labelledby="setup-title">
+      <div class="brand-row">
+        <div>
+          <p class="eyebrow">Quizmaster</p>
+          <h1 id="setup-title">Build a quiz board</h1>
+        </div>
+        <div class="header-actions">
+          <button class="icon-button theme-toggle" id="theme-toggle" type="button" title="Switch to dark mode" aria-label="Switch to dark mode">
+            <svg class="theme-icon-dark" aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M12 3a6 6 0 0 0 9 7.31A9 9 0 1 1 12 3Z"/>
+            </svg>
+            <svg class="theme-icon-light" aria-hidden="true" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2"/>
+              <path d="M12 20v2"/>
+              <path d="m4.93 4.93 1.41 1.41"/>
+              <path d="m17.66 17.66 1.41 1.41"/>
+              <path d="M2 12h2"/>
+              <path d="M20 12h2"/>
+              <path d="m6.34 17.66-1.41 1.41"/>
+              <path d="m19.07 4.93-1.41 1.41"/>
+            </svg>
+          </button>
+          <button class="icon-button" id="reset-board" type="button" title="Reset board" aria-label="Reset board">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+              <path d="M21 3v6h-6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <form id="topic-form" class="topic-form">
+        <label for="topics">Topics</label>
+        <textarea
+          id="topics"
+          name="topics"
+          rows="6"
+          placeholder="Science&#10;History&#10;Movies&#10;Sports&#10;Music"
+          spellcheck="false"
+        ></textarea>
+        <div class="form-actions">
+          <button class="primary-button" type="submit">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M5 3v18"/>
+              <path d="M19 3v18"/>
+              <path d="M5 8h14"/>
+              <path d="M5 16h14"/>
+            </svg>
+            Create board
+          </button>
+          <button class="secondary-button" id="sample-topics" type="button">Sample topics</button>
+        </div>
+      </form>
+
+      <section class="players-panel" aria-labelledby="players-title">
+        <div class="section-heading">
+          <p class="eyebrow">Players</p>
+          <h2 id="players-title">Score board</h2>
+        </div>
+
+        <form id="player-form" class="player-form">
+          <label class="sr-only" for="player-name">Player name</label>
+          <input id="player-name" name="player-name" type="text" placeholder="Player name" autocomplete="off">
+          <button class="secondary-button" type="submit">Add player</button>
+        </form>
+
+        <ol id="scoreboard" class="scoreboard" aria-live="polite"></ol>
+      </section>
+    </section>
+
+    <section class="board-section" aria-labelledby="board-title">
+      <div class="board-header">
+        <div>
+          <p class="eyebrow">Board</p>
+          <h2 id="board-title">Quiz rounds</h2>
+        </div>
+        <p id="board-count" class="round-count">0 topics</p>
+      </div>
+      <div id="board" class="quiz-board" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <template id="empty-state-template">
+    <div class="empty-state">
+      <h2>No board yet</h2>
+      <p>Add one topic per line and create the quiz board.</p>
+    </div>
+  </template>
+
+  <dialog id="credit-dialog" class="credit-dialog">
+    <form id="credit-form" method="dialog">
+      <p class="eyebrow">Award points</p>
+      <h2 id="credit-title">Who gets the points?</h2>
+      <p id="credit-detail" class="credit-detail"></p>
+      <div id="credit-options" class="credit-options"></div>
+      <div class="dialog-actions">
+        <button class="secondary-button" id="credit-skip" value="skip" type="submit">No points</button>
+        <button class="primary-button" id="credit-save" value="save" type="submit">Credit player</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/app.js"></script>
+</body>
+</html>
