@@ -77,7 +77,7 @@ http://localhost:8080
 
 ## Host a Multiplayer Session with ngrok
 
-- Visit https://dashboard.ngrok.com/ and sign up for a free account.
+- Visit https://ngrok.com/ and sign up for a free account.
 - After signing up, go to the "Getting Started" section, choose your Operating System, and follow the instructions to download and set up ngrok.
 - Once ngrok is set up, run the jar file as described above, ensuring your application is running on port 8080.
 - In your terminal, start ngrok to forward HTTP traffic to your local server:
