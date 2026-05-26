@@ -126,6 +126,40 @@ textarea {
   gap: 8px;
 }
 
+.mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  background: var(--control);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.mode-button {
+  min-height: 40px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 850;
+}
+
+.mode-button.active {
+  color: #ffffff;
+  background: var(--primary);
+}
+
+.mode-panel {
+  display: none;
+}
+
+.mode-panel.active {
+  display: grid;
+  gap: 28px;
+}
+
 .eyebrow {
   margin: 0 0 6px;
   color: var(--primary);
@@ -164,6 +198,12 @@ h1 {
   gap: 12px;
 }
 
+.join-form {
+  display: grid;
+  gap: 10px;
+  padding-top: 4px;
+}
+
 .topic-form label,
 .player-form label {
   font-size: 0.9rem;
@@ -171,7 +211,9 @@ h1 {
 }
 
 .topic-form textarea,
-.player-form input {
+.player-form input,
+.join-form input,
+.session-link {
   width: 100%;
   padding: 14px;
   color: var(--ink);
@@ -187,7 +229,9 @@ h1 {
 }
 
 .topic-form textarea:focus,
-.player-form input:focus {
+.player-form input:focus,
+.join-form input:focus,
+.session-link:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent);
 }
@@ -196,6 +240,35 @@ h1 {
   display: grid;
   gap: 14px;
   padding-top: 4px;
+}
+
+.session-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.session-code {
+  display: grid;
+  min-height: 64px;
+  place-items: center;
+  color: var(--topic-ink);
+  background: var(--topic);
+  border-radius: 8px;
+  font-size: 2rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.session-link {
+  font-size: 0.82rem;
+}
+
+.status-message {
+  min-height: 22px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 700;
 }
 
 .section-heading h2 {
@@ -227,6 +300,15 @@ h1 {
   background: var(--row);
   border: 1px solid var(--line);
   border-radius: 8px;
+}
+
+#multiplayer-scoreboard .scoreboard-row {
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+}
+
+.scoreboard-row.current-turn {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent);
 }
 
 .scoreboard-rank {
@@ -370,6 +452,46 @@ h1 {
   padding-bottom: 4px;
 }
 
+.active-question-panel {
+  margin-top: 18px;
+  padding: 14px;
+  background: var(--row);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.active-question-detail,
+.host-question-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.host-question-actions {
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.question-timer {
+  display: inline-grid;
+  min-width: 72px;
+  min-height: 42px;
+  place-items: center;
+  color: var(--point-ink);
+  background: var(--point);
+  border: 1px solid var(--point-border);
+  border-radius: 8px;
+  font-size: 1.25rem;
+  font-weight: 950;
+}
+
+.question-timer.expired {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--line));
+}
+
 .topic-cell,
 .point-button {
   display: grid;
@@ -406,6 +528,11 @@ h1 {
   background: var(--point-hover);
 }
 
+.point-button:disabled {
+  cursor: not-allowed;
+  transform: none;
+}
+
 .point-button.played {
   color: var(--played-ink);
   background: var(--played);
@@ -417,6 +544,14 @@ h1 {
 .point-button.credited {
   gap: 6px;
   color: var(--credit-ink);
+  text-decoration: none;
+}
+
+.point-button.active-question {
+  color: #ffffff;
+  background: var(--primary);
+  border-color: var(--primary-dark);
+  font-size: clamp(1.05rem, 2vw, 1.6rem);
   text-decoration: none;
 }
 
@@ -527,6 +662,10 @@ h1 {
   margin-bottom: 0;
 }
 
+.hidden {
+  display: none !important;
+}
+
 @media (max-width: 860px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -551,6 +690,12 @@ h1 {
   .primary-button,
   .secondary-button {
     width: 100%;
+  }
+
+  .active-question-detail,
+  .host-question-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .quiz-board {

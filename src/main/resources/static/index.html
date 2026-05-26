@@ -40,6 +40,12 @@
         </div>
       </div>
 
+      <div class="mode-switch" role="tablist" aria-label="Game mode">
+        <button id="single-mode" class="mode-button active" type="button" aria-selected="true">Single player</button>
+        <button id="multi-mode" class="mode-button" type="button" aria-selected="false">Multiplayer</button>
+      </div>
+
+      <div id="single-panel" class="mode-panel active">
       <form id="topic-form" class="topic-form">
         <label for="topics">Topics</label>
         <textarea
@@ -77,6 +83,63 @@
 
         <ol id="scoreboard" class="scoreboard" aria-live="polite"></ol>
       </section>
+      </div>
+
+      <div id="multi-panel" class="mode-panel">
+        <form id="host-session-form" class="topic-form">
+          <label for="multiplayer-topics">Host topics</label>
+          <textarea
+            id="multiplayer-topics"
+            name="multiplayer-topics"
+            rows="6"
+            placeholder="Science&#10;History&#10;Movies&#10;Sports&#10;Music"
+            spellcheck="false"
+          ></textarea>
+          <div class="form-actions">
+            <button class="primary-button" type="submit">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M5 3v18"/>
+                <path d="M19 3v18"/>
+                <path d="M5 8h14"/>
+                <path d="M5 16h14"/>
+              </svg>
+              Host session
+            </button>
+            <button class="secondary-button" id="multiplayer-sample-topics" type="button">Sample topics</button>
+          </div>
+        </form>
+
+        <section id="host-session-panel" class="session-panel hidden" aria-labelledby="host-session-title">
+          <div class="section-heading">
+            <p class="eyebrow">Host</p>
+            <h2 id="host-session-title">Session</h2>
+          </div>
+          <div class="session-code" id="session-code">------</div>
+          <input id="session-link" class="session-link" type="text" readonly aria-label="Player join link">
+        </section>
+
+        <form id="join-session-form" class="join-form">
+          <div class="section-heading">
+            <p class="eyebrow">Players</p>
+            <h2>Join session</h2>
+          </div>
+          <label class="sr-only" for="join-code">Session code</label>
+          <input id="join-code" name="join-code" type="text" placeholder="Session code" autocomplete="off">
+          <label class="sr-only" for="join-nickname">Nickname</label>
+          <input id="join-nickname" name="join-nickname" type="text" placeholder="Nickname" autocomplete="off">
+          <button class="secondary-button" type="submit">Join</button>
+        </form>
+
+        <section class="players-panel" aria-labelledby="multiplayer-players-title">
+          <div class="section-heading">
+            <p class="eyebrow">Rotation</p>
+            <h2 id="multiplayer-players-title">Players</h2>
+          </div>
+          <ol id="multiplayer-scoreboard" class="scoreboard" aria-live="polite"></ol>
+        </section>
+
+        <p id="multiplayer-message" class="status-message" role="status"></p>
+      </div>
     </section>
 
     <section class="board-section" aria-labelledby="board-title">
@@ -86,6 +149,11 @@
           <h2 id="board-title">Quiz rounds</h2>
         </div>
         <p id="board-count" class="round-count">0 topics</p>
+      </div>
+      <section id="multiplayer-active-question" class="active-question-panel hidden" aria-live="polite"></section>
+      <div id="host-question-actions" class="host-question-actions hidden">
+        <button id="award-points" class="primary-button" type="button">Award points</button>
+        <button id="no-points" class="secondary-button" type="button">No points</button>
       </div>
       <div id="board" class="quiz-board" aria-live="polite"></div>
     </section>
