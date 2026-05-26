@@ -75,6 +75,17 @@ Open:
 http://localhost:8080
 ```
 
+## Host a Multiplayer Session with ngrok
+
+- Visit https://dashboard.ngrok.com/ and sign up for a free account.
+- After signing up, go to the "Getting Started" section, choose your Operating System, and follow the instructions to download and set up ngrok.
+- Once ngrok is set up, run the jar file as described above, ensuring your application is running on port 8080.
+- In your terminal, start ngrok to forward HTTP traffic to your local server:
+```bash
+ngrok http 8080
+```
+- ngrok will provide you with a public URL (e.g., `https://abcd1234.ngrok.io`). Share this URL with your friends to allow them to access your Quizmaster session from their browsers.
+
 ## Troubleshooting
 
 - If port `8080` is already in use, stop the other application or run this app on another port:
