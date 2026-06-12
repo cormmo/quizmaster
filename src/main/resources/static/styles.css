@@ -126,6 +126,11 @@ textarea {
   gap: 8px;
 }
 
+.setup-toggle {
+  gap: 8px;
+  width: auto;
+}
+
 .mode-switch {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -402,6 +407,7 @@ h1 {
 }
 
 .primary-button svg,
+.secondary-button svg,
 .icon-button svg {
   width: 20px;
   height: 20px;
@@ -690,6 +696,10 @@ h1 {
   .primary-button,
   .secondary-button {
     width: 100%;
+  }
+
+  .header-actions .setup-toggle {
+    width: auto;
   }
 
   .active-question-detail,

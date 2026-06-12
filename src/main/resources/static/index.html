@@ -15,6 +15,20 @@
           <h1 id="setup-title">Build a quiz board</h1>
         </div>
         <div class="header-actions">
+          <button class="secondary-button setup-toggle" id="setup-toggle" type="button" aria-expanded="true" aria-controls="mode-switch topic-form host-session-form join-session-form">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M4 21v-7"/>
+              <path d="M4 10V3"/>
+              <path d="M12 21v-9"/>
+              <path d="M12 8V3"/>
+              <path d="M20 21v-5"/>
+              <path d="M20 12V3"/>
+              <path d="M2 14h4"/>
+              <path d="M10 8h4"/>
+              <path d="M18 16h4"/>
+            </svg>
+            <span>Hide setup</span>
+          </button>
           <button class="icon-button theme-toggle" id="theme-toggle" type="button" title="Switch to dark mode" aria-label="Switch to dark mode">
             <svg class="theme-icon-dark" aria-hidden="true" viewBox="0 0 24 24">
               <path d="M12 3a6 6 0 0 0 9 7.31A9 9 0 1 1 12 3Z"/>
@@ -40,7 +54,7 @@
         </div>
       </div>
 
-      <div class="mode-switch" role="tablist" aria-label="Game mode">
+      <div class="mode-switch" id="mode-switch" role="tablist" aria-label="Game mode">
         <button id="single-mode" class="mode-button active" type="button" aria-selected="true">Single player</button>
         <button id="multi-mode" class="mode-button" type="button" aria-selected="false">Multiplayer</button>
       </div>

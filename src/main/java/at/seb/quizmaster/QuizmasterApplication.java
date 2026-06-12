@@ -9,5 +9,4 @@ public class QuizmasterApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(QuizmasterApplication.class, args);
 	}
-
 }

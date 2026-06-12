@@ -3,6 +3,7 @@ const sampleTopics = ["Science", "History", "Movies", "Sports", "Music"];
 const storageKey = "quizmaster-board";
 const themeStorageKey = "quizmaster-theme";
 const modeStorageKey = "quizmaster-mode";
+const setupStorageKey = "quizmaster-setup-collapsed";
 const hostKeyPrefix = "quizmaster-host-key:";
 const playerIdPrefix = "quizmaster-player-id:";
 
@@ -19,6 +20,8 @@ const sampleButton = document.querySelector("#sample-topics");
 const multiplayerSampleButton = document.querySelector("#multiplayer-sample-topics");
 const resetButton = document.querySelector("#reset-board");
 const themeToggle = document.querySelector("#theme-toggle");
+const setupToggle = document.querySelector("#setup-toggle");
+const modeSwitch = document.querySelector("#mode-switch");
 const singleModeButton = document.querySelector("#single-mode");
 const multiModeButton = document.querySelector("#multi-mode");
 const singlePanel = document.querySelector("#single-panel");
@@ -45,6 +48,7 @@ const creditSaveButton = document.querySelector("#credit-save");
 
 let pendingCreditKey = null;
 let currentMode = localStorage.getItem(modeStorageKey) === "multi" ? "multi" : "single";
+let setupCollapsed = localStorage.getItem(setupStorageKey) === "true";
 let multiplayerSession = null;
 let multiplayerHostKey = "";
 let multiplayerPlayerId = "";
@@ -66,6 +70,25 @@ const applyTheme = (theme) => {
   const label = `Switch to ${nextTheme} mode`;
   themeToggle.title = label;
   themeToggle.setAttribute("aria-label", label);
+};
+
+const setSetupCollapsed = (collapsed, { persist = true } = {}) => {
+  setupCollapsed = collapsed;
+
+  if (persist) {
+    localStorage.setItem(setupStorageKey, String(collapsed));
+  }
+
+  modeSwitch.classList.toggle("hidden", collapsed);
+  form.classList.toggle("hidden", collapsed);
+  hostSessionForm.classList.toggle("hidden", collapsed);
+  joinSessionForm.classList.toggle("hidden", collapsed);
+
+  const label = collapsed ? "Setup" : "Hide setup";
+  setupToggle.querySelector("span").textContent = label;
+  setupToggle.title = collapsed ? "Show setup controls" : "Hide setup controls";
+  setupToggle.setAttribute("aria-label", setupToggle.title);
+  setupToggle.setAttribute("aria-expanded", String(!collapsed));
 };
 
 const readBoard = () => {
@@ -347,6 +370,7 @@ const renderSingleApp = (state) => {
   hostQuestionActions.classList.add("hidden");
   renderSingleBoard(state);
   renderSingleScoreboard(state);
+  setSetupCollapsed(setupCollapsed, { persist: false });
 };
 
 const setMode = (mode) => {
@@ -358,6 +382,7 @@ const setMode = (mode) => {
   multiModeButton.setAttribute("aria-selected", String(mode === "multi"));
   singlePanel.classList.toggle("active", mode === "single");
   multiPanel.classList.toggle("active", mode === "multi");
+  setSetupCollapsed(setupCollapsed, { persist: false });
 
   if (mode === "single") {
     stopMultiplayerPolling();
@@ -621,6 +646,7 @@ const createMultiplayerSession = async () => {
       body: JSON.stringify({ topics }),
     });
     rememberSession(response.session, { hostKey: response.hostKey });
+    setSetupCollapsed(true);
     setMode("multi");
     renderMultiplayerApp(response.session);
     startMultiplayerPolling();
@@ -649,6 +675,7 @@ const joinMultiplayerSession = async () => {
       body: JSON.stringify({ nickname }),
     });
     rememberSession(response.session, { playerId: response.playerId });
+    setSetupCollapsed(true);
     setMode("multi");
     renderMultiplayerApp(response.session);
     startMultiplayerPolling();
@@ -682,6 +709,10 @@ form.addEventListener("submit", (event) => {
   const nextState = { topics, played: [], players: current.players, credits: {} };
   writeBoard(nextState);
   renderSingleApp(nextState);
+
+  if (topics.length > 0) {
+    setSetupCollapsed(true);
+  }
 });
 
 playerForm.addEventListener("submit", (event) => {
@@ -749,6 +780,8 @@ themeToggle.addEventListener("click", () => {
   localStorage.setItem(themeStorageKey, nextTheme);
   applyTheme(nextTheme);
 });
+
+setupToggle.addEventListener("click", () => setSetupCollapsed(!setupCollapsed));
 
 singleModeButton.addEventListener("click", () => setMode("single"));
 
@@ -823,5 +856,10 @@ const initialState = readBoard();
 applyTheme(resolvedTheme());
 topicsInput.value = initialState.topics.join("\n");
 multiplayerTopicsInput.value = initialState.topics.length ? initialState.topics.join("\n") : "";
+if (initialState.topics.length === 0 && !new URLSearchParams(window.location.search).has("session")) {
+  setSetupCollapsed(false, { persist: false });
+} else {
+  setSetupCollapsed(setupCollapsed, { persist: false });
+}
 setMode(currentMode);
 initializeFromUrl();
