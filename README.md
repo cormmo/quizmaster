@@ -1,6 +1,10 @@
 # Quizmaster
 
 Quizmaster is a Spring Boot web application with a static browser UI.
+With this web application you can host quiz nights easly off- and online.
+You can add your own topics with scores from 100 - 500, questions have to be prepared seperatly. (May add question support later)
+The host then awards the points to the participant. 
+Happy quizzing!
 
 ## Requirements
 
