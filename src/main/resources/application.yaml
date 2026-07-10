@@ -1,3 +1,6 @@
 spring:
   application:
     name: quizmaster
+
+  server:
+    port: 8080

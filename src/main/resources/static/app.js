@@ -16,6 +16,16 @@ const multiplayerTopicsInput = document.querySelector("#multiplayer-topics");
 const playerNameInput = document.querySelector("#player-name");
 const joinCodeInput = document.querySelector("#join-code");
 const joinNicknameInput = document.querySelector("#join-nickname");
+const questionTopicInput = document.querySelector("#question-topic");
+const questionPointsInput = document.querySelector("#question-points");
+const questionTextInput = document.querySelector("#question-text");
+const addQuestionButton = document.querySelector("#add-question");
+const questionList = document.querySelector("#question-list");
+const multiplayerQuestionTopicInput = document.querySelector("#multiplayer-question-topic");
+const multiplayerQuestionPointsInput = document.querySelector("#multiplayer-question-points");
+const multiplayerQuestionTextInput = document.querySelector("#multiplayer-question-text");
+const multiplayerAddQuestionButton = document.querySelector("#multiplayer-add-question");
+const multiplayerQuestionList = document.querySelector("#multiplayer-question-list");
 const sampleButton = document.querySelector("#sample-topics");
 const multiplayerSampleButton = document.querySelector("#multiplayer-sample-topics");
 const resetButton = document.querySelector("#reset-board");
@@ -53,6 +63,8 @@ let multiplayerSession = null;
 let multiplayerHostKey = "";
 let multiplayerPlayerId = "";
 let multiplayerPollTimer = null;
+let singleSetupQuestions = [];
+let multiplayerSetupQuestions = [];
 
 const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -95,12 +107,13 @@ const readBoard = () => {
   const stored = localStorage.getItem(storageKey);
 
   if (!stored) {
-    return { topics: [], played: [], players: [], credits: {} };
+    return { topics: [], questions: [], played: [], players: [], credits: {} };
   }
 
   try {
     const parsed = JSON.parse(stored);
     const topics = Array.isArray(parsed.topics) ? parsed.topics : [];
+    const questions = sanitizeQuestions(parsed.questions);
     const played = Array.isArray(parsed.played) ? parsed.played : [];
     const players = Array.isArray(parsed.players) ? parsed.players : [];
     const credits =
@@ -108,9 +121,9 @@ const readBoard = () => {
         ? parsed.credits
         : {};
 
-    return { topics, played, players, credits };
+    return { topics, questions, played, players, credits };
   } catch {
-    return { topics: [], played: [], players: [], credits: {} };
+    return { topics: [], questions: [], played: [], players: [], credits: {} };
   }
 };
 
@@ -141,12 +154,159 @@ const parseTopics = () => parseTopicText(topicsInput.value);
 
 const pointKey = (topicIndex, pointIndex) => `${topicIndex}:${pointIndex}`;
 
+const pointIndexForValue = (value) => points.indexOf(Number(value));
+
+const sanitizeQuestions = (questions) => {
+  if (!Array.isArray(questions)) {
+    return [];
+  }
+
+  const seen = new Set();
+  const sanitized = [];
+
+  questions.forEach((question) => {
+    const topic = typeof question.topic === "string" ? question.topic.trim() : "";
+    const text = typeof question.text === "string" ? question.text.trim() : "";
+    const pointValue = Number(question.points);
+
+    if (!topic || !text || !points.includes(pointValue)) {
+      return;
+    }
+
+    const key = `${topic.toLowerCase()}:${pointValue}`;
+
+    if (seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+    sanitized.push({ topic, points: pointValue, text });
+  });
+
+  return sanitized;
+};
+
+const mergeTopicsWithQuestions = (topicText, questions) => {
+  const topics = parseTopicText(topicText);
+  const seen = new Set(topics.map((topic) => topic.toLowerCase()));
+
+  sanitizeQuestions(questions).forEach((question) => {
+    const key = question.topic.toLowerCase();
+
+    if (!seen.has(key)) {
+      topics.push(question.topic);
+      seen.add(key);
+    }
+  });
+
+  return topics.slice(0, 8);
+};
+
+const questionMap = (topics, questions) => {
+  const mapped = new Map();
+
+  sanitizeQuestions(questions).forEach((question) => {
+    const topicIndex = topics.findIndex((topic) => topic.toLowerCase() === question.topic.toLowerCase());
+    const pointIndex = pointIndexForValue(question.points);
+
+    if (topicIndex >= 0 && pointIndex >= 0) {
+      mapped.set(pointKey(topicIndex, pointIndex), question);
+    }
+  });
+
+  return mapped;
+};
+
 const playerId = () => {
   if (window.crypto && window.crypto.randomUUID) {
     return window.crypto.randomUUID();
   }
 
   return `player-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
+const createQuestionBuilder = ({ topicInput, pointsInput, textInput, addButton, list, getQuestions, setQuestions }) => {
+  const render = () => {
+    list.innerHTML = "";
+
+    getQuestions().forEach((question, index) => {
+      const item = document.createElement("li");
+      item.className = "question-row";
+
+      const value = document.createElement("span");
+      value.className = "question-row-value";
+      value.textContent = question.points;
+
+      const body = document.createElement("span");
+      body.className = "question-row-body";
+
+      const topic = document.createElement("span");
+      topic.className = "question-row-topic";
+      topic.textContent = question.topic;
+
+      const text = document.createElement("span");
+      text.className = "question-row-text";
+      text.textContent = question.text;
+
+      const removeButton = document.createElement("button");
+      removeButton.className = "remove-player";
+      removeButton.type = "button";
+      removeButton.title = `Remove ${question.topic} for ${question.points}`;
+      removeButton.setAttribute("aria-label", removeButton.title);
+      removeButton.textContent = "x";
+      removeButton.addEventListener("click", () => {
+        setQuestions(getQuestions().filter((_, currentIndex) => currentIndex !== index));
+        render();
+      });
+
+      body.append(topic, text);
+      item.append(value, body, removeButton);
+      list.append(item);
+    });
+  };
+
+  const addQuestion = () => {
+    const topic = topicInput.value.trim();
+    const text = textInput.value.trim();
+    const pointValue = Number(pointsInput.value);
+
+    if (!topic) {
+      topicInput.focus();
+      return;
+    }
+
+    if (!text) {
+      textInput.focus();
+      return;
+    }
+
+    const existingIndex = getQuestions().findIndex(
+      (question) => question.topic.toLowerCase() === topic.toLowerCase() && question.points === pointValue
+    );
+    const nextQuestion = { topic, points: pointValue, text };
+    const nextQuestions = [...getQuestions()];
+
+    if (existingIndex >= 0) {
+      nextQuestions[existingIndex] = nextQuestion;
+    } else {
+      nextQuestions.push(nextQuestion);
+    }
+
+    setQuestions(sanitizeQuestions(nextQuestions));
+    textInput.value = "";
+    textInput.focus();
+    render();
+  };
+
+  addButton.addEventListener("click", addQuestion);
+
+  return {
+    render,
+    setQuestions: (questions) => {
+      setQuestions(sanitizeQuestions(questions));
+      render();
+    },
+  };
 };
 
 const updateCount = (topics) => {
@@ -245,10 +405,10 @@ const playerNameById = (players, id) => {
   return player ? player.name : "";
 };
 
-const showCreditDialog = (state, key, topic, pointValue) => {
+const showCreditDialog = (state, key, topic, pointValue, questionText = "") => {
   pendingCreditKey = key;
   creditTitle.textContent = `Who gets ${pointValue} points?`;
-  creditDetail.textContent = `${topic} was marked played. Choose the player to credit.`;
+  creditDetail.textContent = questionText || `${topic} was marked played. Choose the player to credit.`;
   creditOptions.innerHTML = "";
   creditSaveButton.disabled = state.players.length === 0;
 
@@ -285,7 +445,7 @@ const showCreditDialog = (state, key, topic, pointValue) => {
 };
 
 const renderSingleBoard = (state) => {
-  const { topics, played, credits, players } = state;
+  const { topics, questions, played, credits, players } = state;
 
   if (topics.length === 0) {
     renderEmptyState();
@@ -293,6 +453,8 @@ const renderSingleBoard = (state) => {
   }
 
   const playedSet = new Set(played);
+  const questionsByKey = questionMap(topics, questions);
+  const usesCustomQuestions = sanitizeQuestions(questions).length > 0;
   board.innerHTML = "";
   board.style.gridTemplateColumns = `repeat(${topics.length}, minmax(128px, 1fr))`;
 
@@ -304,12 +466,22 @@ const renderSingleBoard = (state) => {
 
     points.forEach((pointValue, pointIndex) => {
       const key = pointKey(topicIndex, pointIndex);
+      const question = questionsByKey.get(key);
       const pointButton = document.createElement("button");
       pointButton.className = "point-button";
       pointButton.type = "button";
       pointButton.textContent = pointValue;
       pointButton.setAttribute("aria-pressed", playedSet.has(key));
       pointButton.title = `${topic} for ${pointValue} points`;
+
+      if (usesCustomQuestions && !question) {
+        pointButton.classList.add("empty-question");
+        pointButton.textContent = "-";
+        pointButton.title = "No question added";
+        pointButton.disabled = true;
+        board.append(pointButton);
+        return;
+      }
 
       if (playedSet.has(key)) {
         pointButton.classList.add("played");
@@ -346,6 +518,7 @@ const renderSingleBoard = (state) => {
 
         const nextState = {
           topics: current.topics,
+          questions: current.questions || [],
           players: current.players,
           played: [...currentPlayed],
           credits: nextCredits,
@@ -354,7 +527,8 @@ const renderSingleBoard = (state) => {
         renderSingleApp(nextState);
 
         if (!wasPlayed) {
-          showCreditDialog(nextState, key, current.topics[topicIndex], pointValue);
+          const currentQuestion = questionMap(current.topics, current.questions).get(key);
+          showCreditDialog(nextState, key, current.topics[topicIndex], pointValue, currentQuestion?.text || "");
         }
       });
 
@@ -540,6 +714,13 @@ const renderActiveQuestion = (session) => {
   detail.append(title, timer);
   activeQuestionPanel.append(detail);
 
+  if (question.text) {
+    const text = document.createElement("p");
+    text.className = "active-question-text";
+    text.textContent = question.text;
+    activeQuestionPanel.append(text);
+  }
+
   if (multiplayerHostKey) {
     hostQuestionActions.classList.remove("hidden");
   }
@@ -554,6 +735,7 @@ const renderMultiplayerBoard = (session) => {
   const playedSet = new Set(session.played);
   const isCurrentPlayer = Boolean(multiplayerPlayerId && session.currentPlayerId === multiplayerPlayerId);
   const hasActiveQuestion = Boolean(session.currentQuestion);
+  const questionsByKey = new Map((session.questions || []).map((question) => [question.key, question]));
 
   board.innerHTML = "";
   board.style.gridTemplateColumns = `repeat(${session.topics.length}, minmax(128px, 1fr))`;
@@ -566,11 +748,21 @@ const renderMultiplayerBoard = (session) => {
 
     points.forEach((pointValue, pointIndex) => {
       const key = pointKey(topicIndex, pointIndex);
+      const question = questionsByKey.get(key);
       const pointButton = document.createElement("button");
       pointButton.className = "point-button";
       pointButton.type = "button";
       pointButton.textContent = pointValue;
       pointButton.title = `${topic} for ${pointValue} points`;
+
+      if (!question) {
+        pointButton.classList.add("empty-question");
+        pointButton.textContent = "-";
+        pointButton.title = "No question added";
+        pointButton.disabled = true;
+        board.append(pointButton);
+        return;
+      }
 
       if (playedSet.has(key)) {
         pointButton.classList.add("played");
@@ -632,10 +824,13 @@ const renderMultiplayerApp = (session) => {
 };
 
 const createMultiplayerSession = async () => {
-  const topics = parseTopicText(multiplayerTopicsInput.value);
+  const questions = sanitizeQuestions(multiplayerSetupQuestions);
+  const topics = mergeTopicsWithQuestions(multiplayerTopicsInput.value, questions);
 
   if (topics.length === 0) {
-    multiplayerTopicsInput.focus();
+    if (questions.length === 0) {
+      multiplayerTopicsInput.focus();
+    }
     setMultiplayerMessage("Add at least one topic before hosting.");
     return;
   }
@@ -643,7 +838,7 @@ const createMultiplayerSession = async () => {
   try {
     const response = await fetchJson("/api/sessions", {
       method: "POST",
-      body: JSON.stringify({ topics }),
+      body: JSON.stringify({ topics, questions }),
     });
     rememberSession(response.session, { hostKey: response.hostKey });
     setSetupCollapsed(true);
@@ -701,12 +896,37 @@ const closeCurrentQuestion = async (award) => {
   }
 };
 
+const singleQuestionBuilder = createQuestionBuilder({
+  topicInput: questionTopicInput,
+  pointsInput: questionPointsInput,
+  textInput: questionTextInput,
+  addButton: addQuestionButton,
+  list: questionList,
+  getQuestions: () => singleSetupQuestions,
+  setQuestions: (questions) => {
+    singleSetupQuestions = questions;
+  },
+});
+
+const multiplayerQuestionBuilder = createQuestionBuilder({
+  topicInput: multiplayerQuestionTopicInput,
+  pointsInput: multiplayerQuestionPointsInput,
+  textInput: multiplayerQuestionTextInput,
+  addButton: multiplayerAddQuestionButton,
+  list: multiplayerQuestionList,
+  getQuestions: () => multiplayerSetupQuestions,
+  setQuestions: (questions) => {
+    multiplayerSetupQuestions = questions;
+  },
+});
+
 form.addEventListener("submit", (event) => {
   event.preventDefault();
 
   const current = readBoard();
-  const topics = parseTopics();
-  const nextState = { topics, played: [], players: current.players, credits: {} };
+  const questions = sanitizeQuestions(singleSetupQuestions);
+  const topics = mergeTopicsWithQuestions(topicsInput.value, questions);
+  const nextState = { topics, questions, played: [], players: current.players, credits: {} };
   writeBoard(nextState);
   renderSingleApp(nextState);
 
@@ -770,7 +990,13 @@ resetButton.addEventListener("click", () => {
   }
 
   const current = readBoard();
-  const nextState = { topics: current.topics, played: [], players: current.players, credits: {} };
+  const nextState = {
+    topics: current.topics,
+    questions: current.questions || [],
+    played: [],
+    players: current.players,
+    credits: {},
+  };
   writeBoard(nextState);
   renderSingleApp(nextState);
 });
@@ -856,6 +1082,8 @@ const initialState = readBoard();
 applyTheme(resolvedTheme());
 topicsInput.value = initialState.topics.join("\n");
 multiplayerTopicsInput.value = initialState.topics.length ? initialState.topics.join("\n") : "";
+singleQuestionBuilder.setQuestions(initialState.questions || []);
+multiplayerQuestionBuilder.setQuestions(initialState.questions || []);
 if (initialState.topics.length === 0 && !new URLSearchParams(window.location.search).has("session")) {
   setSetupCollapsed(false, { persist: false });
 } else {

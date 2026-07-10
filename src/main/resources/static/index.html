@@ -68,6 +68,28 @@
           placeholder="Science&#10;History&#10;Movies&#10;Sports&#10;Music"
           spellcheck="false"
         ></textarea>
+        <div class="question-builder" aria-labelledby="single-questions-title">
+          <div class="section-heading">
+            <p class="eyebrow">Questions</p>
+            <h2 id="single-questions-title">Question setup</h2>
+          </div>
+          <div class="question-fields">
+            <label class="sr-only" for="question-topic">Question topic</label>
+            <input id="question-topic" type="text" placeholder="Topic" autocomplete="off">
+            <label class="sr-only" for="question-points">Question value</label>
+            <select id="question-points" aria-label="Question value">
+              <option value="100">100</option>
+              <option value="200">200</option>
+              <option value="300">300</option>
+              <option value="400">400</option>
+              <option value="500">500</option>
+            </select>
+          </div>
+          <label class="sr-only" for="question-text">Question</label>
+          <textarea id="question-text" rows="3" placeholder="Question" spellcheck="true"></textarea>
+          <button class="secondary-button" id="add-question" type="button">Add question</button>
+          <ol id="question-list" class="question-list" aria-live="polite"></ol>
+        </div>
         <div class="form-actions">
           <button class="primary-button" type="submit">
             <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -108,6 +130,28 @@
             placeholder="Science&#10;History&#10;Movies&#10;Sports&#10;Music"
             spellcheck="false"
           ></textarea>
+          <div class="question-builder" aria-labelledby="multiplayer-questions-title">
+            <div class="section-heading">
+              <p class="eyebrow">Questions</p>
+              <h2 id="multiplayer-questions-title">Question setup</h2>
+            </div>
+            <div class="question-fields">
+              <label class="sr-only" for="multiplayer-question-topic">Question topic</label>
+              <input id="multiplayer-question-topic" type="text" placeholder="Topic" autocomplete="off">
+              <label class="sr-only" for="multiplayer-question-points">Question value</label>
+              <select id="multiplayer-question-points" aria-label="Question value">
+                <option value="100">100</option>
+                <option value="200">200</option>
+                <option value="300">300</option>
+                <option value="400">400</option>
+                <option value="500">500</option>
+              </select>
+            </div>
+            <label class="sr-only" for="multiplayer-question-text">Question</label>
+            <textarea id="multiplayer-question-text" rows="3" placeholder="Question" spellcheck="true"></textarea>
+            <button class="secondary-button" id="multiplayer-add-question" type="button">Add question</button>
+            <ol id="multiplayer-question-list" class="question-list" aria-live="polite"></ol>
+          </div>
           <div class="form-actions">
             <button class="primary-button" type="submit">
               <svg aria-hidden="true" viewBox="0 0 24 24">

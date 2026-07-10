@@ -63,6 +63,7 @@ class MultiplayerSessions {
 	private static final int MAX_TOPICS = 8;
 	private static final int MAX_NICKNAME_LENGTH = 24;
 	private static final int[] POINTS = { 100, 200, 300, 400, 500 };
+	private static final int MAX_QUESTIONS = MAX_TOPICS * 5;
 	private static final String CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 	private final SecureRandom random = new SecureRandom();
@@ -70,14 +71,20 @@ class MultiplayerSessions {
 
 	CreateSessionResponse create(CreateSessionRequest request) {
 		List<String> topics = sanitizeTopics(request.topics());
+		topics = topicsWithQuestionTopics(topics, request.questions());
+		List<QuestionDefinition> questions = sanitizeQuestions(request.questions(), topics);
 
 		if (topics.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one topic is required.");
 		}
 
+		if (questions.isEmpty()) {
+			questions = defaultQuestions(topics);
+		}
+
 		String code = uniqueCode();
 		String hostKey = UUID.randomUUID().toString();
-		GameSession session = new GameSession(code, hostKey, topics);
+		GameSession session = new GameSession(code, hostKey, topics, questions);
 		sessions.put(code, session);
 
 		return new CreateSessionResponse(hostKey, toView(session));
@@ -231,7 +238,18 @@ class MultiplayerSessions {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid question key.");
 		}
 
-		return new QuestionRef(questionKey, topicIndex, pointIndex, session.topics.get(topicIndex), POINTS[pointIndex]);
+		return session.questions.stream()
+				.filter((question) -> question.key.equals(questionKey))
+				.map((question) -> new QuestionRef(
+						question.key,
+						question.topicIndex,
+						question.pointIndex,
+						question.topic,
+						question.points,
+						question.text
+				))
+				.findFirst()
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid question key."));
 	}
 
 	private SessionView toView(GameSession session) {
@@ -248,6 +266,16 @@ class MultiplayerSessions {
 			return new SessionView(
 					session.code,
 					session.topics,
+					session.questions.stream()
+							.map((question) -> new QuestionDefinitionView(
+									question.key,
+									question.topicIndex,
+									question.pointIndex,
+									question.topic,
+									question.points,
+									question.text
+							))
+							.toList(),
 					session.played.stream().sorted().toList(),
 					players,
 					session.currentPlayerId,
@@ -273,6 +301,7 @@ class MultiplayerSessions {
 				activeQuestion.pointIndex,
 				question.topic(),
 				question.points(),
+				question.text(),
 				player.id,
 				player.nickname,
 				activeQuestion.selectedAt,
@@ -307,6 +336,127 @@ class MultiplayerSessions {
 		}
 
 		return sanitized;
+	}
+
+	private List<String> topicsWithQuestionTopics(List<String> topics, List<QuestionRequest> questions) {
+		if (questions == null || topics.size() == MAX_TOPICS) {
+			return topics;
+		}
+
+		List<String> combined = new ArrayList<>(topics);
+		Set<String> seen = new HashSet<>();
+
+		for (String topic : combined) {
+			seen.add(topic.toLowerCase(Locale.ROOT));
+		}
+
+		for (QuestionRequest question : questions) {
+			if (question == null) {
+				continue;
+			}
+
+			String topic = question.topic() == null ? "" : question.topic().trim();
+			String key = topic.toLowerCase(Locale.ROOT);
+
+			if (topic.isEmpty() || seen.contains(key)) {
+				continue;
+			}
+
+			combined.add(topic);
+			seen.add(key);
+
+			if (combined.size() == MAX_TOPICS) {
+				break;
+			}
+		}
+
+		return combined;
+	}
+
+	private List<QuestionDefinition> sanitizeQuestions(List<QuestionRequest> questions, List<String> topics) {
+		if (questions == null || questions.isEmpty()) {
+			return List.of();
+		}
+
+		List<QuestionDefinition> sanitized = new ArrayList<>();
+		Set<String> usedKeys = new HashSet<>();
+
+		for (QuestionRequest question : questions) {
+			if (question == null) {
+				continue;
+			}
+
+			String topic = question.topic() == null ? "" : question.topic().trim();
+			String text = question.text() == null ? "" : question.text().trim();
+			int topicIndex = topicIndex(topics, topic);
+			int pointIndex = pointIndex(question.points());
+
+			if (topicIndex < 0 || pointIndex < 0 || text.isEmpty()) {
+				continue;
+			}
+
+			String key = pointKey(topicIndex, pointIndex);
+
+			if (usedKeys.contains(key)) {
+				continue;
+			}
+
+			sanitized.add(new QuestionDefinition(key, topicIndex, pointIndex, topics.get(topicIndex), POINTS[pointIndex], text));
+			usedKeys.add(key);
+
+			if (sanitized.size() == MAX_QUESTIONS) {
+				break;
+			}
+		}
+
+		return sanitized;
+	}
+
+	private List<QuestionDefinition> defaultQuestions(List<String> topics) {
+		List<QuestionDefinition> questions = new ArrayList<>();
+
+		for (int topicIndex = 0; topicIndex < topics.size(); topicIndex++) {
+			for (int pointIndex = 0; pointIndex < POINTS.length; pointIndex++) {
+				questions.add(new QuestionDefinition(
+						pointKey(topicIndex, pointIndex),
+						topicIndex,
+						pointIndex,
+						topics.get(topicIndex),
+						POINTS[pointIndex],
+						""
+				));
+			}
+		}
+
+		return questions;
+	}
+
+	private int topicIndex(List<String> topics, String topic) {
+		for (int index = 0; index < topics.size(); index++) {
+			if (topics.get(index).equalsIgnoreCase(topic)) {
+				return index;
+			}
+		}
+
+		return -1;
+	}
+
+	private int pointIndex(Integer points) {
+		if (points == null) {
+			return -1;
+		}
+
+		for (int index = 0; index < POINTS.length; index++) {
+			if (POINTS[index] == points) {
+				return index;
+			}
+		}
+
+		return -1;
+	}
+
+	private String pointKey(int topicIndex, int pointIndex) {
+		return topicIndex + ":" + pointIndex;
 	}
 
 	private String sanitizeNickname(String nickname) {
@@ -348,7 +498,10 @@ class MultiplayerSessions {
 	}
 }
 
-record CreateSessionRequest(List<String> topics) {
+record CreateSessionRequest(List<String> topics, List<QuestionRequest> questions) {
+}
+
+record QuestionRequest(String topic, String text, Integer points) {
 }
 
 record CreateSessionResponse(String hostKey, SessionView session) {
@@ -369,6 +522,7 @@ record CloseQuestionRequest(String hostKey, boolean award) {
 record SessionView(
 		String code,
 		List<String> topics,
+		List<QuestionDefinitionView> questions,
 		List<String> played,
 		List<PlayerView> players,
 		String currentPlayerId,
@@ -386,6 +540,7 @@ record QuestionView(
 		int pointIndex,
 		String topic,
 		int points,
+		String text,
 		String selectedByPlayerId,
 		String selectedByNickname,
 		Instant selectedAt,
@@ -395,7 +550,10 @@ record QuestionView(
 ) {
 }
 
-record QuestionRef(String key, int topicIndex, int pointIndex, String topic, int points) {
+record QuestionDefinitionView(String key, int topicIndex, int pointIndex, String topic, int points, String text) {
+}
+
+record QuestionRef(String key, int topicIndex, int pointIndex, String topic, int points, String text) {
 }
 
 class GameSession {
@@ -403,15 +561,36 @@ class GameSession {
 	final String code;
 	final String hostKey;
 	final List<String> topics;
+	final List<QuestionDefinition> questions;
 	final List<Player> players = new ArrayList<>();
 	final Set<String> played = new HashSet<>();
 	String currentPlayerId;
 	ActiveQuestion currentQuestion;
 
-	GameSession(String code, String hostKey, List<String> topics) {
+	GameSession(String code, String hostKey, List<String> topics, List<QuestionDefinition> questions) {
 		this.code = code;
 		this.hostKey = hostKey;
 		this.topics = List.copyOf(topics);
+		this.questions = List.copyOf(questions);
+	}
+}
+
+class QuestionDefinition {
+
+	final String key;
+	final int topicIndex;
+	final int pointIndex;
+	final String topic;
+	final int points;
+	final String text;
+
+	QuestionDefinition(String key, int topicIndex, int pointIndex, String topic, int points, String text) {
+		this.key = key;
+		this.topicIndex = topicIndex;
+		this.pointIndex = pointIndex;
+		this.topic = topic;
+		this.points = points;
+		this.text = text;
 	}
 }
 
